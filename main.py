@@ -3,13 +3,15 @@ import hmac
 import hashlib
 import requests
 import os
+from datetime import datetime
 
 API_KEY = os.getenv("MEXC_API_KEY")
 SECRET_KEY = os.getenv("MEXC_SECRET_KEY")
 
 BASE_URL = "https://api.mexc.com"
 LOG_FILE = "usdt_log.txt"
-MAX_LINES = 100
+
+RESET_HOUR = 8  # jam 08:00 pagi
 
 def get_account_info():
     endpoint = "/api/v3/account"
@@ -66,22 +68,40 @@ def write_log(lines):
         for line in lines:
             f.write(line + "\n")
 
+def is_reset_time():
+    now = datetime.now()
+    return now.hour == RESET_HOUR and now.minute < 10  # toleransi cron 10 menit
+
 def update_log(new_value):
+    now = datetime.now()
+    timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+
     lines = read_log()
 
-    # skip kalau sama dengan baris terakhir
-    if lines and lines[-1] == f"{new_value:.4f}":
-        print("Duplicate → skip log")
-        return
+    # ===== RESET LOG SETIAP HARI JAM 08:00 =====
+    if is_reset_time():
+        if lines:
+            first_line_date = lines[0].split(" ")[0]
+            today_date = now.strftime("%Y-%m-%d")
 
-    lines.append(f"{new_value:.4f}")
+            # kalau file bukan hari ini → reset
+            if first_line_date != today_date:
+                print("Reset log harian")
+                lines = []
 
-    # batasi 100 baris (ambil terakhir saja)
-    if len(lines) > MAX_LINES:
-        lines = lines[-MAX_LINES:]
+    # ===== CEK DUPLIKAT (berdasarkan nilai terakhir) =====
+    if lines:
+        last_value = lines[-1].split(" | ")[-1]
+        if last_value == f"{new_value:.4f}":
+            print("Duplicate → skip log")
+            return
+
+    # ===== FORMAT: tanggal jam | saldo =====
+    new_line = f"{timestamp} | {new_value:.4f}"
+    lines.append(new_line)
 
     write_log(lines)
-    print(f"Logged: {new_value:.4f}")
+    print(f"Logged: {new_line}")
 
 def main():
     balance = get_usdt_balance()
