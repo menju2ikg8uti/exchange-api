@@ -1,0 +1,95 @@
+import time
+import hmac
+import hashlib
+import requests
+import os
+
+API_KEY = os.getenv("MEXC_API_KEY")
+SECRET_KEY = os.getenv("MEXC_SECRET_KEY")
+
+BASE_URL = "https://api.mexc.com"
+LOG_FILE = "usdt_log.txt"
+MAX_LINES = 100
+
+def get_account_info():
+    endpoint = "/api/v3/account"
+    timestamp = int(time.time() * 1000)
+
+    query_string = f"timestamp={timestamp}"
+
+    signature = hmac.new(
+        SECRET_KEY.encode(),
+        query_string.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+    url = f"{BASE_URL}{endpoint}?{query_string}&signature={signature}"
+
+    headers = {
+        "X-MEXC-APIKEY": API_KEY
+    }
+
+    response = requests.get(url, headers=headers)
+    return response.json()
+
+def get_usdt_balance():
+    data = get_account_info()
+
+    if "balances" not in data:
+        print("Error:", data)
+        return None
+
+    for asset in data["balances"]:
+        if asset["asset"] == "USDT":
+            free = float(asset["free"])
+            locked = float(asset["locked"])
+            total = free + locked
+
+            if total < 10:
+                print(f"USDT terlalu kecil: {total:.4f} → skip")
+                return None
+
+            return round(total, 4)
+
+    return None
+
+def read_log():
+    if not os.path.exists(LOG_FILE):
+        return []
+
+    with open(LOG_FILE, "r") as f:
+        lines = [line.strip() for line in f if line.strip()]
+    return lines
+
+def write_log(lines):
+    with open(LOG_FILE, "w") as f:
+        for line in lines:
+            f.write(line + "\n")
+
+def update_log(new_value):
+    lines = read_log()
+
+    # skip kalau sama dengan baris terakhir
+    if lines and lines[-1] == f"{new_value:.4f}":
+        print("Duplicate → skip log")
+        return
+
+    lines.append(f"{new_value:.4f}")
+
+    # batasi 100 baris (ambil terakhir saja)
+    if len(lines) > MAX_LINES:
+        lines = lines[-MAX_LINES:]
+
+    write_log(lines)
+    print(f"Logged: {new_value:.4f}")
+
+def main():
+    balance = get_usdt_balance()
+
+    if balance is None:
+        return
+
+    update_log(balance)
+
+if __name__ == "__main__":
+    main()
