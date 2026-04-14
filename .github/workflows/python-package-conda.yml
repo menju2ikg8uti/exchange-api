@@ -28,3 +28,13 @@ jobs:
         MEXC_SECRET_KEY: ${{ secrets.MEXC_SECRET_KEY }}
       run: |
         python main.py
+    - name: Commit & Push log
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+
+        git add usdt_log.txt
+
+        git diff --cached --quiet || git commit -m "update usdt log"
+
+        git push
