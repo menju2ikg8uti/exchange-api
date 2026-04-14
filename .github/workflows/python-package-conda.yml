@@ -2,8 +2,11 @@ name: Run MEXC Balance
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "*/10 * * * *"
+    inputs:
+      source:
+        description: trigger source
+        required: false
+        default: cron-job.org
 
 jobs:
   run-script:
