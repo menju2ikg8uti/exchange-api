@@ -11,8 +11,6 @@ SECRET_KEY = os.getenv("MEXC_SECRET_KEY")
 BASE_URL = "https://api.mexc.com"
 LOG_FILE = "usdt_log.txt"
 
-RESET_HOUR = 8  # jam 08:00 pagi (WIB)
-
 def get_account_info():
     endpoint = "/api/v3/account"
     timestamp = int(time.time() * 1000)
@@ -68,25 +66,12 @@ def write_log(lines):
         for line in lines:
             f.write(line + "\n")
 
-def is_reset_time(now):
-    return now.hour == RESET_HOUR and now.minute < 10  # toleransi cron
-
 def update_log(new_value):
     # pakai WIB (UTC+7)
     now = datetime.utcnow() + timedelta(hours=7)
     timestamp = now.strftime("%Y-%m-%d %H:%M")  # TANPA DETIK
 
     lines = read_log()
-
-    # ===== RESET LOG JAM 08:00 =====
-    if is_reset_time(now):
-        if lines:
-            first_line_date = lines[0].split(" ")[0]
-            today_date = now.strftime("%Y-%m-%d")
-
-            if first_line_date != today_date:
-                print("Reset log harian")
-                lines = []
 
     # ===== CEK DUPLIKAT =====
     if lines:
