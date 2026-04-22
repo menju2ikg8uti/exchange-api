@@ -66,6 +66,19 @@ def write_log(lines):
         for line in lines:
             f.write(line + "\n")
 
+def parse_datetime(timestamp_str, last_date):
+    # FULL FORMAT
+    if len(timestamp_str) > 5:
+        dt = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M")
+        return dt, dt.strftime("%Y-%m-%d")
+
+    # ONLY TIME → pakai tanggal sebelumnya
+    if last_date is None:
+        raise ValueError("Format error: time tanpa tanggal di baris awal")
+
+    dt = datetime.strptime(f"{last_date} {timestamp_str}", "%Y-%m-%d %H:%M")
+    return dt, last_date
+
 def format_lines(lines):
     formatted = []
     last_date = None
@@ -73,8 +86,7 @@ def format_lines(lines):
     for line in lines:
         timestamp_str, value = line.split(" | ")
 
-        dt = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M")
-        current_date = dt.strftime("%Y-%m-%d")
+        dt, current_date = parse_datetime(timestamp_str, last_date)
 
         if current_date == last_date:
             new_time = dt.strftime("%H:%M")
@@ -99,7 +111,7 @@ def update_log(new_value):
             print("Duplicate → skip log")
             return
 
-    # ===== TAMBAH DATA BARU =====
+    # ===== TAMBAH DATA =====
     lines.append(f"{timestamp} | {new_value:.4f}")
 
     # ===== FORMAT ULANG =====
