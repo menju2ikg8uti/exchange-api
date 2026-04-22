@@ -66,10 +66,29 @@ def write_log(lines):
         for line in lines:
             f.write(line + "\n")
 
+def format_lines(lines):
+    formatted = []
+    last_date = None
+
+    for line in lines:
+        timestamp_str, value = line.split(" | ")
+
+        dt = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M")
+        current_date = dt.strftime("%Y-%m-%d")
+
+        if current_date == last_date:
+            new_time = dt.strftime("%H:%M")
+        else:
+            new_time = dt.strftime("%Y-%m-%d %H:%M")
+
+        formatted.append(f"{new_time} | {value}")
+        last_date = current_date
+
+    return formatted
+
 def update_log(new_value):
-    # pakai WIB (UTC+7)
     now = datetime.utcnow() + timedelta(hours=7)
-    timestamp = now.strftime("%Y-%m-%d %H:%M")  # TANPA DETIK
+    timestamp = now.strftime("%Y-%m-%d %H:%M")
 
     lines = read_log()
 
@@ -80,12 +99,14 @@ def update_log(new_value):
             print("Duplicate → skip log")
             return
 
-    # ===== FORMAT LOG =====
-    new_line = f"{timestamp} | {new_value:.4f}"
-    lines.append(new_line)
+    # ===== TAMBAH DATA BARU =====
+    lines.append(f"{timestamp} | {new_value:.4f}")
 
-    write_log(lines)
-    print(f"Logged: {new_line}")
+    # ===== FORMAT ULANG =====
+    formatted_lines = format_lines(lines)
+
+    write_log(formatted_lines)
+    print("Logged & formatted")
 
 def main():
     balance = get_usdt_balance()
