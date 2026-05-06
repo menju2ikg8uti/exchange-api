@@ -23,7 +23,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install requests
+        pip install requests websocket-client python-dotenv
 
     - name: Run script
       env:
