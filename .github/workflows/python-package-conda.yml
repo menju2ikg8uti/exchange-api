@@ -31,6 +31,12 @@ jobs:
         MEXC_SECRET_KEY: ${{ secrets.MEXC_SECRET_KEY }}
       run: |
         python main.py
+    - name: Run script test
+      env:
+        MEXC_API_KEY: ${{ secrets.MEXC_API_KEY }}
+        MEXC_SECRET_KEY: ${{ secrets.MEXC_SECRET_KEY }}
+      run: |
+        python test.py
     - name: Commit & Push log
       run: |
         git config user.name "github-actions"
