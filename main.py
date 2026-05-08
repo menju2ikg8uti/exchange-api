@@ -80,24 +80,50 @@ def parse_datetime(timestamp_str, last_date):
     return dt, last_date
 
 def format_lines(lines):
-    formatted = []
+    parsed = []
     last_date = None
 
+    # ===== PARSE SEMUA =====
     for line in lines:
         timestamp_str, value = line.split(" | ")
 
         dt, current_date = parse_datetime(timestamp_str, last_date)
 
-        if current_date == last_date:
-            new_time = dt.strftime("%H:%M")
-        else:
-            new_time = dt.strftime("%Y-%m-%d %H:%M")
+        parsed.append({
+            "dt": dt,
+            "date": current_date,
+            "value": value
+        })
 
-        formatted.append(f"{new_time} | {value}")
         last_date = current_date
 
-    return formatted
+    # ===== CARI TANGGAL TERAKHIR =====
+    latest_date = parsed[-1]["date"]
 
+    formatted = []
+    first_latest_found = False
+
+    for item in parsed:
+        dt = item["dt"]
+        value = item["value"]
+        current_date = item["date"]
+
+        # selain tanggal terakhir -> full format
+        if current_date != latest_date:
+            new_time = dt.strftime("%Y-%m-%d %H:%M")
+
+        else:
+            # baris pertama tanggal terakhir -> full
+            if not first_latest_found:
+                new_time = dt.strftime("%Y-%m-%d %H:%M")
+                first_latest_found = True
+            else:
+                # sisanya HH:MM
+                new_time = dt.strftime("%H:%M")
+
+        formatted.append(f"{new_time} | {value}")
+
+    return formatted
 def update_log(new_value):
     now = datetime.utcnow() + timedelta(hours=7)
     timestamp = now.strftime("%Y-%m-%d %H:%M")
